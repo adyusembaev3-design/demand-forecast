@@ -21,3 +21,5 @@ model.joblib
 # OS / editor
 .DS_Store
 .vscode/
+models/
+mlflow.db
