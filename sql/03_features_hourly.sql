@@ -14,9 +14,12 @@ WITH base AS (
         w.temp_c_max_city,
         w.temp_c_min_city,
         w.humidity_pct,
-        w.wind_kmh
+        w.wind_kmh,
+        coalesce(h.is_holiday, FALSE) AS is_holiday,
+        coalesce(h.is_holiday_adjacent, FALSE) AS is_holiday_adjacent
     FROM demand_hourly d
     LEFT JOIN weather_hourly w ON w.ts = d.ts
+    LEFT JOIN holidays h ON CAST(h.date AS DATE) = CAST(d.ts_local AS DATE)
 ),
 feat AS (
     SELECT

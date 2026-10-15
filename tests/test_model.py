@@ -14,7 +14,8 @@ def test_interval_metrics():
 def _synthetic(n=900):
     rng = np.random.default_rng(0)
     d = pd.DataFrame({c: rng.normal(size=n) for c in FEATURES})
-    d["is_weekend"] = rng.integers(0, 2, n).astype(bool)
+    for c in ("is_weekend", "is_holiday", "is_holiday_adjacent"):
+        d[c] = rng.integers(0, 2, n).astype(bool)
     d["demand_mwh"] = 100 + 10 * d["temp_c"] + rng.normal(scale=1.0, size=n)
     d["is_imputed"] = False
     return d

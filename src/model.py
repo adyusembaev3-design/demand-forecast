@@ -24,7 +24,7 @@ RESULTS = ROOT / "docs" / "results"
 FIGURES = ROOT / "docs" / "figures"
 
 FEATURES = [
-    "hour_local", "dow", "month_num", "is_weekend",
+    "hour_local", "dow", "month_num", "is_weekend", "is_holiday", "is_holiday_adjacent",
     "temp_c", "temp_c_max_city", "temp_c_min_city", "humidity_pct", "wind_kmh",
     "cdd", "hdd", "lag_24", "lag_48", "lag_168", "roll24_mean",
 ]
@@ -34,7 +34,8 @@ PARAMS = dict(max_iter=300, learning_rate=0.08, max_leaf_nodes=31, min_samples_l
 
 def make_X(df: pd.DataFrame) -> pd.DataFrame:
     X = df[FEATURES].copy()
-    X["is_weekend"] = X["is_weekend"].astype(int)
+    for c in ("is_weekend", "is_holiday", "is_holiday_adjacent"):
+        X[c] = X[c].astype(int)
     return X
 
 

@@ -6,6 +6,7 @@ Run from the project root:
 import duckdb
 import pandas as pd
 
+from src.calendar_features import holiday_table
 from src.config import DATA_PROCESSED, DATA_RAW, DB_PATH, ROOT
 
 SQL_DIR = ROOT / "sql"
@@ -25,7 +26,9 @@ def load_raw_tables(con: duckdb.DuckDBPyConnection, demand: pd.DataFrame, weathe
         grid["ts"].dt.tz_localize("UTC").dt.tz_convert(LOCAL_TZ).dt.tz_localize(None)
     )
 
-    for name, df in [("raw_demand", demand), ("raw_weather", weather), ("time_dim", grid)]:
+    hol = holiday_table(grid["ts_local"].min(), grid["ts_local"].max())
+
+    for name, df in [("raw_demand", demand), ("raw_weather", weather), ("time_dim", grid), ("holidays", hol)]:
         con.register("tmp_df", df)
         con.execute(f"CREATE OR REPLACE TABLE {name} AS SELECT * FROM tmp_df")
         con.unregister("tmp_df")

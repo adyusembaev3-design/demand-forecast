@@ -51,3 +51,14 @@ def test_features_table():
     assert np.allclose(f["temp_c"], 15.0)      # average of the two cities
     assert np.allclose(f["cdd"], 0.0)           # 15C is below the 18.3C base
     assert np.allclose(f["hdd"], 3.3)
+
+
+def test_holiday_features_are_joined():
+    import datetime as dt
+    con, _ = _build()
+    f = con.execute("SELECT * FROM features_hourly").df()
+    assert {"is_holiday", "is_holiday_adjacent"} <= set(f.columns)
+    mlk = f[f["ts_local"].dt.date == dt.date(2024, 1, 15)]       # Martin Luther King Jr. Day
+    assert len(mlk) > 0 and mlk["is_holiday"].all()
+    eve = f[f["ts_local"].dt.date == dt.date(2024, 1, 14)]
+    assert eve["is_holiday_adjacent"].all() and not eve["is_holiday"].any()
