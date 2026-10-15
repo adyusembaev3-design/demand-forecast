@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Secrets and local config
+.env
+
+# Data and artifacts (never commit raw data or models)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+*.duckdb
+*.parquet
+mlruns/
+model.joblib
+
+# OS / editor
+.DS_Store
+.vscode/
