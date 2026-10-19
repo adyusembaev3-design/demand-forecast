@@ -128,7 +128,7 @@ The image contains only the API and the saved model bundle, with pinned dependen
 
 ## Experiment tracking
 
-Each model run is logged to MLflow (SQLite backend) with its parameters and backtest metrics. Start the UI with `mlflow ui --backend-store-uri sqlite:///mlflow.db`.
+Model runs are logged to MLflow (SQLite backend). Start the UI with `mlflow ui --backend-store-uri sqlite:///mlflow.db`.
 
 ![MLflow run](docs/figures/mlflow_run.png)
 
@@ -166,7 +166,7 @@ The last command points the running function at the new image (the same as "Depl
 - **Observed weather, not forecast weather.** The backtest uses actual temperatures for the target hour. In production the model would receive a weather forecast, so real-world error would be higher. Rerunning with archived forecast inputs is the main next step.
 - **Rare holidays.** Holiday features help, but the model is weaker on days with few historical examples.
 - **Calibration lag.** The band is calibrated on the three prior months, so coverage falls below the 80% target when conditions change fast (about 66% in June, 72% in November and 68% in December).
-- **Extreme days.** The largest misses cluster in multi-day spells where demand ran above the forecast, such as 23 Jun 2025, when actual demand reached about 160,000 MWh against a forecast near 151,000. A few one-day drops below forecast (for example 27 Jun) are of similar size. The causes have not been investigated beyond the dates and temperatures.
+- **Extreme days.** The largest misses cluster in multi-day spells where demand ran above the forecast, such as 23 Jun 2025, when actual demand reached about 160,000 MWh against a forecast near 151,000. A few one-day drops below forecast (for example 27 Jun) are of similar size. The causes have not been investigated.
 - **Trained range only.** Tree models cannot extrapolate beyond the demand levels they saw, so the API rejects implausible inputs.
 - **Source revisions.** EIA demand is reported by the grid operator and can be revised after the fact.
 - **Demo-grade deployment.** The Lambda endpoint has no authentication, rate limiting or live monitoring. It is a portfolio demo, not a production service.
