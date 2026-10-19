@@ -2,6 +2,8 @@
 
 End-to-end forecasting project for the PJM grid: public demand and weather data, SQL feature tables, a gradient-boosted model with calibrated prediction intervals, anomaly detection, explainability, experiment tracking, a Dockerized API and a public Tableau dashboard.
 
+**Headline result:** on a 2025 backtest, the model cuts mean absolute error by about 55% versus a same-hour-yesterday baseline, and it beats the baseline in all 12 months.
+
 **Live dashboard:** [PJM demand forecasting on Tableau Public](https://public.tableau.com/app/profile/akhmad.dyussembayev/viz/PJMdemandforecasting_17923745734520/Dashboard)
 
 **Live API (AWS Lambda):** https://3jf6tah5ycq2ktpgywo2xms5nu0zykyt.lambda-url.us-east-1.on.aws/docs (interactive docs; the first request after idle takes a few seconds)
@@ -21,7 +23,18 @@ Backtest: 12 monthly rolling-origin folds over 2025 (8,760 test hours). Each fol
 - Adding holiday features moved MAPE from 2.34% to 2.22%.
 - Raw quantile bands were too narrow. A conformal adjustment, calibrated on the three prior months, brings overall coverage to 79.8%.
 - The model beats the baseline in every month (see the monthly chart on the dashboard).
-- Anomaly detection (robust z-score on forecast errors, |z| > 4) flags 75 hours, grouped into 23 events. The large misses come in runs of consecutive days (for example 20-23 Jan and 21-25 Jun), which look like extended cold and heat spells, plus a few isolated days where demand came in below forecast.
+- Anomaly detection (robust z-score on forecast errors, |z| > 4) flags 75 hours, grouped into 23 events. Most large misses are demand above forecast and come in runs of consecutive days (for example 20-23 Jan and 21-25 Jun). A few one-day drops below forecast, such as 27 Jun, are of similar size. The dashboard lists every event.
+
+## Figures
+
+| | |
+|---|---|
+| ![Naive baseline during a heat wave](docs/figures/baseline_heatwave.png) | ![Gradient-boosted model during a heat wave](docs/figures/gbm_heatwave.png) |
+| Naive baseline during a heat wave | Gradient-boosted model, same period |
+| ![Calibrated 80% band during a heat wave](docs/figures/calibrated_heatwave.png) | ![Flagged anomalies](docs/figures/anomalies.png) |
+| Calibrated 80% prediction band | Flagged anomaly hours |
+| ![Feature importance](docs/figures/feature_importance.png) | ![SHAP dependence](docs/figures/shap_dependence.png) |
+| Permutation feature importance | SHAP dependence |
 
 ## Architecture
 
@@ -74,12 +87,14 @@ EIA Open Data API (hourly PJM demand)     Open-Meteo archive (5 cities)
 
 ## Run it
 
+**Prerequisites:** Python 3.13, and a free [EIA API key](https://www.eia.gov/opendata/register.php). Docker is optional (only for the API image). The trained model is not stored in git, so run `python -m src.train` before `docker build`.
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env              # add your EIA API key; .env is git-ignored
-pytest
+pytest                            # run the test suite
 
 python -m src.ingest              # download demand and weather
 python -m src.build_features      # SQL feature table
@@ -111,6 +126,10 @@ docker run -p 8000:8000 demand-forecast
 
 The image contains only the API and the saved model bundle, with pinned dependencies.
 
+## Experiment tracking
+
+Each model run is logged to MLflow (SQLite backend) with its parameters and backtest metrics. Start the UI with `mlflow ui --backend-store-uri sqlite:///mlflow.db`.
+
 ![MLflow run](docs/figures/mlflow_run.png)
 
 ## Deployment (AWS)
@@ -136,19 +155,21 @@ export REPO=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/demand-forecast
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 docker build --platform linux/arm64 --provenance=false -t ${REPO}:latest .
 docker push ${REPO}:latest
+
+aws lambda update-function-code --function-name demand-forecast-api --image-uri ${REPO}:latest
 ```
 
-Then use "Deploy new image" on the Lambda function. Note: in zsh, write `${REPO}:latest` with braces, because `$REPO:latest` is parsed as a lowercase modifier.
+The last command points the running function at the new image (the same as "Deploy new image" in the console). Note: in zsh, write `${REPO}:latest` with braces, because `$REPO:latest` is parsed as a lowercase modifier.
 
 ## Limitations
 
 - **Observed weather, not forecast weather.** The backtest uses actual temperatures for the target hour. In production the model would receive a weather forecast, so real-world error would be higher. Rerunning with archived forecast inputs is the main next step.
 - **Rare holidays.** Holiday features help, but the model is weaker on days with few historical examples.
 - **Calibration lag.** The band is calibrated on the three prior months, so coverage falls below the 80% target when conditions change fast (about 66% in June, 72% in November and 68% in December).
-- **Extreme heat and cold.** The largest misses are demand spikes during heat or cold spells, such as 23 Jun 2025, where actual demand reached about 160,000 MWh against a forecast near 151,000.
+- **Extreme days.** The largest misses cluster in multi-day spells where demand ran above the forecast, such as 23 Jun 2025, when actual demand reached about 160,000 MWh against a forecast near 151,000. A few one-day drops below forecast (for example 27 Jun) are of similar size. The causes have not been investigated beyond the dates and temperatures.
 - **Trained range only.** Tree models cannot extrapolate beyond the demand levels they saw, so the API rejects implausible inputs.
 - **Source revisions.** EIA demand is reported by the grid operator and can be revised after the fact.
-- **Demo-grade deployment.** The Lambda endpoint has no authentication, rate limiting beyond a concurrency cap, or live monitoring. It is a portfolio demo, not a production service.
+- **Demo-grade deployment.** The Lambda endpoint has no authentication, rate limiting or live monitoring. It is a portfolio demo, not a production service.
 
 ## Roadmap
 
