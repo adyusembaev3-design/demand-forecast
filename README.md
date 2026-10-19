@@ -27,14 +27,21 @@ Backtest: 12 monthly rolling-origin folds over 2025 (8,760 test hours). Each fol
 
 ## Figures
 
-| | |
+The first three charts zoom in on the June 2025 heat wave (20-28 Jun; time axes are UTC).
+
+| Seasonal-naive baseline (same hour last week) | Gradient-boosted forecast with raw 10th-90th percentile band |
 |---|---|
-| ![Naive baseline during a heat wave](docs/figures/baseline_heatwave.png) | ![Gradient-boosted model during a heat wave](docs/figures/gbm_heatwave.png) |
-| Naive baseline during a heat wave | Gradient-boosted model, same period |
-| ![Calibrated 80% band during a heat wave](docs/figures/calibrated_heatwave.png) | ![Flagged anomalies](docs/figures/anomalies.png) |
-| Calibrated 80% prediction band | Flagged anomaly hours |
+| ![Seasonal-naive baseline during the June 2025 heat wave](docs/figures/baseline_heatwave.png) | ![Gradient-boosted forecast during the June 2025 heat wave](docs/figures/gbm_heatwave.png) |
+
+| Raw vs calibrated 80% prediction band | Forecast error over 2025, with flagged anomaly hours (&#124;z&#124; > 4) |
+|---|---|
+| ![Raw and calibrated prediction bands during the June 2025 heat wave](docs/figures/calibrated_heatwave.png) | ![Forecast error and flagged anomaly hours, 2025](docs/figures/anomalies.png) |
+
+| Feature importance: mean &#124;SHAP&#124; (left) and permutation importance (right) | SHAP dependence: temperature and hour of day |
+|---|---|
 | ![Feature importance](docs/figures/feature_importance.png) | ![SHAP dependence](docs/figures/shap_dependence.png) |
-| Permutation feature importance | SHAP dependence |
+
+Note: the heat-wave baseline chart uses the seasonal-naive forecast (same hour last week). The baseline in the results table is the same-hour-yesterday forecast.
 
 ## Architecture
 
